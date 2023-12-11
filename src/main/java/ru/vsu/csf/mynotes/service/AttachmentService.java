@@ -28,15 +28,14 @@ public class AttachmentService {
 
     public Flux<Long> saveAttachments(List<FilePart> attachments) {
         return Mono.just(attachments)
-                .flatMap(it -> validateAttachments(it)
-                        .thenReturn(it))
+                .flatMap(it -> validateAttachments(it).thenReturn(it))
                 .flatMapIterable(it -> it)
                 .flatMap(this::addAttachment);
     }
 
     private Mono<Void> validateAttachments(List<FilePart> attachments) {
         if (attachments.size() > applicationProperties.getMaxFileAmount()) {
-            throw new BadRequestException("Количество файлов превышает заданный лимит в %d"
+            throw new BadRequestException("Количество файлов превышает заданный лимит в количестве %d файлов"
                     .formatted(applicationProperties.getMaxFileAmount()));
         }
         return Flux.fromIterable(attachments)
@@ -45,19 +44,19 @@ public class AttachmentService {
     }
 
     private Mono<Void> validateAttachment(FilePart attachment) {
-        var fileNameParts = attachment.filename().split("_");
+        var fileNameParts = attachment.filename().split("\\.");
         if (fileNameParts.length < 2) {
             throw new BadRequestException("Файл не имеет расширения");
         }
         if (!ALLOWED_ATTACHMENT_EXTENSIONS.contains(fileNameParts[1])) {
-            throw new BadRequestException("Формат вложения %s не поддерживается".formatted(attachment.filename()));
+            throw new BadRequestException("Формат вложения %s не поддерживается".formatted(fileNameParts[1]));
         }
         return Mono.just(attachment)
                 .flatMapMany(Part::content)
                 .map(DataBuffer::capacity)
                 .collectList()
-                .doOnNext(bytes -> {
-                    var fileSize = bytes.stream()
+                .doOnNext(capacity -> {
+                    var fileSize = capacity.stream()
                             .reduce(0, Integer::sum);
                     if (fromBytesToMegaBytes(fileSize) > applicationProperties.getMaxFileSizeMb()) {
                         throw new BadRequestException(
@@ -70,7 +69,7 @@ public class AttachmentService {
 
     private Mono<Long> addAttachment(FilePart attachment) {
         return FilePartUtils.getByteArray(attachment)
-                .flatMap(bytes -> attachmentRepository.save(new Attachment(null, bytes)))
+                .flatMap(bytes -> attachmentRepository.save(new Attachment().setFile(bytes)))
                 .map(Attachment::getId);
     }
 
@@ -80,14 +79,14 @@ public class AttachmentService {
                 .then();
     }
 
-    public Mono<Void> deleteAttachment(Long id) {
+    private Mono<Void> deleteAttachment(Long id) {
         return attachmentRepository.findById(id)
                 .switchIfEmpty(Mono.error(new NotFoundException("Не существует заметки с ИД " + id)))
                 .flatMap(ignored -> attachmentRepository.deleteById(id));
     }
 
-    private static int fromBytesToMegaBytes(long bytes) {
-        return (int) bytes / 1024 / 1024;
+    private static int fromBytesToMegaBytes(int bytes) {
+        return bytes / 1024 / 1024;
     }
 
 }

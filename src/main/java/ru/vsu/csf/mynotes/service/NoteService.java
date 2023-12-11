@@ -43,7 +43,6 @@ public class NoteService {
     }
 
     public Mono<Long> changeNoteText(Long id, FilePart text) {
-        DataBuffer
         return Mono.zip(findById(id), FilePartUtils.getByteArray(text))
                 .flatMap(tuple -> noteRepository.save(tuple.getT1().setText(tuple.getT2())))
                 .map(Note::getId);
@@ -61,11 +60,10 @@ public class NoteService {
     }
 
     public Mono<Void> deleteAttachments(Long id, List<Long> attachmentIds) {
-        return Mono.zip(findById(id), attachmentService.deleteAttachments(attachmentIds))
-                .flatMap(tuple -> Flux.fromIterable(attachmentIds)
-                        .flatMap(attachmentId -> noteAttachmentsRepository.deleteByNoteIdAndAttachmentId(
-                                id, attachmentId))
-                        .then())
+        return findById(id)
+                .flatMapMany(ignored -> attachmentService.deleteAttachments(attachmentIds)
+                        .thenMany(Flux.fromIterable(attachmentIds)))
+                .flatMap(attachmentId -> noteAttachmentsRepository.deleteByNoteIdAndAttachmentId(id, attachmentId))
                 .then();
     }
 

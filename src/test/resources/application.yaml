@@ -4,10 +4,7 @@ spring:
       repositories:
         enabled: true
   r2dbc:
-    url:
-    username:
-    password:
-    name:
+    url: r2dbc:tc:postgresql:///testdb?TC_IMAGE_TAG=14-alpine
 
 ru:
   vsu:
