@@ -1,0 +1,18 @@
+spring:
+  r2dbc:
+    url:
+    username:
+    password:
+    name:
+  liquibase:
+    enabled: true
+    change-log: "classpath:/db/changelog-master.yaml"
+    url: ${LIQUIBASE_DATABASE_URL}
+    driver-class-name: org.postgresql.Driver
+
+ru:
+  vsu:
+    csf:
+      my-note:
+        max-file-amount: 20
+        max-file-size-mb: 12
