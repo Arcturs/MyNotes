@@ -4,10 +4,10 @@ spring:
       repositories:
         enabled: true
   r2dbc:
-    url:
-    username:
-    password:
-    name:
+    url: r2dbc:postgresql://localhost:5435/mynotesdb
+    username: mynotes
+    password: password
+    name: mynotes
 
 ru:
   vsu:

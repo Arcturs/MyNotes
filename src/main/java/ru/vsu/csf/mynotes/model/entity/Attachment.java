@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
+import ru.vsu.csf.mynotes.dictionary.FileExtension;
 
 @Getter
 @Setter
@@ -18,5 +19,7 @@ public class Attachment {
     private Long id;
 
     private byte[] file;
+
+    private FileExtension extension;
 
 }

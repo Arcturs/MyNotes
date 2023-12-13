@@ -146,7 +146,7 @@ class AttachmentServiceTest {
 
         assertThatThrownBy(() -> attachmentService.deleteAttachments(List.of(1L)).block(RESPONSE_TIMEOUT))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessage("Не существует заметки с ИД 1");
+                .hasMessage("Не существует вложения с ИД 1");
 
         verify(attachmentRepository, never()).deleteById(1L);
     }

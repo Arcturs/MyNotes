@@ -80,9 +80,17 @@ public class AttachmentService {
     }
 
     private Mono<Void> deleteAttachment(Long id) {
-        return attachmentRepository.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("Не существует заметки с ИД " + id)))
+        return findById(id)
                 .flatMap(ignored -> attachmentRepository.deleteById(id));
+    }
+
+    private Mono<Attachment> findById(Long id) {
+        return attachmentRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Не существует вложения с ИД " + id)));
+    }
+
+    public Mono<Attachment> getAttachmentById(Long id) {
+        return findById(id);
     }
 
     private static int fromBytesToMegaBytes(int bytes) {

@@ -1,15 +1,18 @@
 package ru.vsu.csf.mynotes.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.vsu.csf.mynotes.exception.BadRequestException;
 import ru.vsu.csf.mynotes.exception.NotFoundException;
+import ru.vsu.csf.mynotes.model.dto.GetNoteResponse;
+import ru.vsu.csf.mynotes.model.dto.GetNotesResponse;
+import ru.vsu.csf.mynotes.model.entity.Attachment;
 import ru.vsu.csf.mynotes.model.entity.Note;
 import ru.vsu.csf.mynotes.model.entity.NoteAttachments;
 import ru.vsu.csf.mynotes.repository.NoteAttachmentsRepository;
@@ -17,6 +20,8 @@ import ru.vsu.csf.mynotes.repository.NoteRepository;
 import ru.vsu.csf.mynotes.util.FilePartUtils;
 
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.OK;
 
 @Service
 @RequiredArgsConstructor
@@ -71,6 +76,69 @@ public class NoteService {
         return noteRepository.findById(id)
                 .switchIfEmpty(
                         Mono.error(new NotFoundException("Не удалось найти заметку с ИД " + id)));
+    }
+
+    public Mono<GetNoteResponse> getNoteById(Long id) {
+        return Mono.zip(findById(id),
+                        noteAttachmentsRepository.findAllByNoteId(id)
+                                .map(NoteAttachments::getAttachmentId)
+                                .collectList())
+                .map(tuple -> mapToGetNoteResponse(tuple.getT1(), tuple.getT2()));
+    }
+
+    public Mono<GetNotesResponse> getNotes() {
+        return noteRepository.findAll()
+                .map(NoteService::mapToGetNoteResponse)
+                .collectList()
+                .map(notes -> new GetNotesResponse().setNotes(notes));
+    }
+
+    public Mono<Void> getNoteText(Long id, ServerHttpResponse response) {
+        return findById(id)
+                .map(Note::getText)
+                .flatMap(text -> {
+                    response.setStatusCode(OK);
+                    response.getHeaders().setContentType(MediaType.TEXT_HTML);
+                    response.getHeaders().setContentDisposition(
+                            ContentDisposition.attachment()
+                                    .filename("note_%d_text".formatted(id))
+                                    .build()
+                    );
+                    return response.writeWith(Mono.just(response.bufferFactory().wrap(text)));
+                });
+    }
+
+    public Mono<Void> getNoteAttachment(Long id, Long attachmentId, ServerHttpResponse response) {
+        return findById(id)
+                .flatMap(ignored -> attachmentService.getAttachmentById(attachmentId))
+                .flatMap(attachment -> noteAttachmentsRepository.findByNoteIdAndAttachmentId(id, attachmentId)
+                        .switchIfEmpty(
+                                Mono.error(
+                                        new NotFoundException(
+                                                "У заметки с ИД %d нет файла с ИД %d".formatted(id, attachmentId))))
+                        .thenReturn(attachment))
+                .map(Attachment::getFile)
+                .flatMap(file -> {
+                    response.setStatusCode(OK);
+                    response.getHeaders().setContentType(MediaType.TEXT_HTML);
+                    response.getHeaders().setContentDisposition(
+                            ContentDisposition.attachment()
+                                    .filename("note_%d_file".formatted(id))
+                                    .build()
+                    );
+                    return response.writeWith(Mono.just(response.bufferFactory().wrap(file)));
+                });
+    }
+
+    private static GetNoteResponse mapToGetNoteResponse(Note note) {
+        return new GetNoteResponse()
+                .setId(note.getId())
+                .setName(note.getName());
+    }
+
+    private static GetNoteResponse mapToGetNoteResponse(Note note, List<Long> attachmentIds) {
+        return mapToGetNoteResponse(note)
+                .setAttachments(attachmentIds);
     }
 
 }

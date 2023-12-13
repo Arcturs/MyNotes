@@ -1,0 +1,14 @@
+version: '3'
+services:
+  mynotesDB:
+    image: postgres:14-alpine
+    restart: always
+    ports:
+      - 5435:5432
+    container_name: marketDB
+    environment:
+      - POSTGRES_USER=mynotes
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mynotes
+    volumes:
+      - ./mynotesdb_data:/var/lib/postgresql/data
