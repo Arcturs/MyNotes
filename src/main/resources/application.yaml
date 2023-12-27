@@ -4,10 +4,14 @@ spring:
       repositories:
         enabled: true
   r2dbc:
-    url: r2dbc:postgresql://localhost:5435/mynotesdb
+    url: r2dbc:postgresql://localhost:5435/mynotes
     username: mynotes
     password: password
     name: mynotes
+
+springdoc:
+  swagger-ui:
+    path: '/swagger-ui.html'
 
 ru:
   vsu:

@@ -6,10 +6,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.vsu.csf.mynotes.model.entity.NoteAttachments;
 
+import java.util.List;
+
 @Repository
 public interface NoteAttachmentsRepository extends R2dbcRepository<NoteAttachments, Long> {
 
-    Mono<Void> deleteByNoteIdAndAttachmentId(Long noteId, Long attachmentId);
+    Mono<Void> deleteByNoteIdAndAttachmentIdIn(Long noteId, List<Long> attachmentId);
 
     Flux<NoteAttachments> findAllByNoteId(Long noteId);
 

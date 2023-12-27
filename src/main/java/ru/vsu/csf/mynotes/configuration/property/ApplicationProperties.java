@@ -1,4 +1,4 @@
-package ru.vsu.csf.mynotes.configuration;
+package ru.vsu.csf.mynotes.configuration.property;
 
 import lombok.Getter;
 import lombok.Setter;

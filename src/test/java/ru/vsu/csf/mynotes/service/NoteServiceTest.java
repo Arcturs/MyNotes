@@ -32,6 +32,7 @@ class NoteServiceTest {
     private static final Long NOTE_ID = 1L;
     private static final Long ATTACHMENT_ID1 = 20L;
     private static final Long ATTACHMENT_ID2 = 21L;
+    private static final Long USER_ID = 1L;
 
     @InjectMocks
     private NoteService noteService;
@@ -52,7 +53,7 @@ class NoteServiceTest {
     void createNoteSuccessTest() {
         when(noteRepository.save(any())).thenReturn(Mono.empty());
 
-        assertDoesNotThrow(() -> noteService.createNote().block(RESPONSE_TIMEOUT));
+        assertDoesNotThrow(() -> noteService.createNote(USER_ID).block(RESPONSE_TIMEOUT));
 
         verify(noteRepository, atMostOnce()).save(any());
     }
@@ -152,14 +153,14 @@ class NoteServiceTest {
         when(noteRepository.findById(NOTE_ID)).thenReturn(Mono.just(note));
         when(attachmentService.deleteAttachments(List.of(ATTACHMENT_ID1, ATTACHMENT_ID2)))
                 .thenReturn(Mono.empty());
-        when(noteAttachmentsRepository.deleteByNoteIdAndAttachmentId(anyLong(), anyLong()))
+        when(noteAttachmentsRepository.deleteByNoteIdAndAttachmentIdIn(anyLong(), anyList()))
                 .thenReturn(Mono.empty());
 
         assertDoesNotThrow(() -> noteService.deleteAttachments(NOTE_ID, List.of(ATTACHMENT_ID1, ATTACHMENT_ID2))
                 .block(RESPONSE_TIMEOUT));
 
         verify(noteAttachmentsRepository, times(2))
-                .deleteByNoteIdAndAttachmentId(anyLong(), anyLong());
+                .deleteByNoteIdAndAttachmentIdIn(anyLong(), anyList());
     }
 
     @Test
@@ -172,7 +173,7 @@ class NoteServiceTest {
                 .hasMessage("Не удалось найти заметку с ИД 1");
 
         verify(noteAttachmentsRepository, never())
-                .deleteByNoteIdAndAttachmentId(anyLong(), anyLong());
+                .deleteByNoteIdAndAttachmentIdIn(anyLong(), anyList());
     }
 
     private static Note createTestNote() {

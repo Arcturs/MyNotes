@@ -1,13 +1,15 @@
 package ru.vsu.csf.mynotes.service;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.http.codec.multipart.Part;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import ru.vsu.csf.mynotes.configuration.ApplicationProperties;
+import ru.vsu.csf.mynotes.configuration.property.ApplicationProperties;
+import ru.vsu.csf.mynotes.dictionary.FileExtension;
 import ru.vsu.csf.mynotes.exception.BadRequestException;
 import ru.vsu.csf.mynotes.exception.NotFoundException;
 import ru.vsu.csf.mynotes.model.entity.Attachment;
@@ -15,18 +17,15 @@ import ru.vsu.csf.mynotes.repository.AttachmentRepository;
 import ru.vsu.csf.mynotes.util.FilePartUtils;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class AttachmentService {
 
-    private static final Set<String> ALLOWED_ATTACHMENT_EXTENSIONS = Set.of("gif", "png", "jpeg", "jpg", "mp3");
-
     private final AttachmentRepository attachmentRepository;
     private final ApplicationProperties applicationProperties;
 
-    public Flux<Long> saveAttachments(List<FilePart> attachments) {
+    public Flux<Long> saveAttachments(@NotNull List<FilePart> attachments) {
         return Mono.just(attachments)
                 .flatMap(it -> validateAttachments(it).thenReturn(it))
                 .flatMapIterable(it -> it)
@@ -48,7 +47,7 @@ public class AttachmentService {
         if (fileNameParts.length < 2) {
             throw new BadRequestException("Файл не имеет расширения");
         }
-        if (!ALLOWED_ATTACHMENT_EXTENSIONS.contains(fileNameParts[1])) {
+        if (!FileExtension.getValues().contains(fileNameParts[1])) {
             throw new BadRequestException("Формат вложения %s не поддерживается".formatted(fileNameParts[1]));
         }
         return Mono.just(attachment)
@@ -69,11 +68,16 @@ public class AttachmentService {
 
     private Mono<Long> addAttachment(FilePart attachment) {
         return FilePartUtils.getByteArray(attachment)
-                .flatMap(bytes -> attachmentRepository.save(new Attachment().setFile(bytes)))
+                .flatMap(bytes -> attachmentRepository.save(
+                        new Attachment().setFile(bytes)
+                                .setExtension(
+                                        FileExtension.valueOf(attachment.filename()
+                                                .split("\\.")[1]
+                                                .toUpperCase()))))
                 .map(Attachment::getId);
     }
 
-    public Mono<Void> deleteAttachments(List<Long> ids) {
+    public Mono<Void> deleteAttachments(@NotNull List<Long> ids) {
         return Flux.fromIterable(ids)
                 .flatMap(this::deleteAttachment)
                 .then();
@@ -86,10 +90,11 @@ public class AttachmentService {
 
     private Mono<Attachment> findById(Long id) {
         return attachmentRepository.findById(id)
-                .switchIfEmpty(Mono.error(new NotFoundException("Не существует вложения с ИД " + id)));
+                .switchIfEmpty(Mono.defer(() ->
+                        Mono.error(new NotFoundException("Не существует вложения с ИД " + id))));
     }
 
-    public Mono<Attachment> getAttachmentById(Long id) {
+    public Mono<Attachment> getAttachmentById(@NotNull Long id) {
         return findById(id);
     }
 

@@ -5,7 +5,7 @@ services:
     restart: always
     ports:
       - 5435:5432
-    container_name: marketDB
+    container_name: mynotesDB
     environment:
       - POSTGRES_USER=mynotes
       - POSTGRES_PASSWORD=password

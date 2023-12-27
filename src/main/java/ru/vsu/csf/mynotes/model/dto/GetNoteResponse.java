@@ -12,8 +12,10 @@ import java.util.List;
 @AllArgsConstructor
 @Accessors(chain = true)
 public class GetNoteResponse {
+
     private Long id;
     private String name;
+    private Boolean isAttached;
 
     private List<Long> attachments;
 

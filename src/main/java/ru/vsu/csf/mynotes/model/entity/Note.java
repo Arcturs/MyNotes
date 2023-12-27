@@ -21,4 +21,8 @@ public class Note {
 
     private byte[] text;
 
+    private boolean isAttached;
+
+    private Long userId;
+
 }

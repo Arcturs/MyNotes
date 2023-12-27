@@ -10,6 +10,7 @@ import ru.vsu.csf.mynotes.model.entity.Attachment;
 import ru.vsu.csf.mynotes.model.entity.Note;
 
 import java.time.Duration;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,7 +43,7 @@ class NoteAttachmentsRepositoryTest {
         noteRepository.save(new Note())
                 .then(attachmentRepository.save(new Attachment()));
 
-        assertDoesNotThrow(() -> noteAttachmentsRepository.deleteByNoteIdAndAttachmentId(1L, 1L)
+        assertDoesNotThrow(() -> noteAttachmentsRepository.deleteByNoteIdAndAttachmentIdIn(1L, List.of(1L))
                 .block(RESPONSE_TIMEOUT));
 
         assertTrue(noteAttachmentsRepository.findAll()
