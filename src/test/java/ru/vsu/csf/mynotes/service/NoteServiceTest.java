@@ -129,7 +129,9 @@ class NoteServiceTest {
                 .thenReturn(Flux.fromIterable(List.of(ATTACHMENT_ID1, ATTACHMENT_ID2)));
         when(noteAttachmentsRepository.save(any())).thenReturn(Mono.empty());
 
-        assertDoesNotThrow(() -> noteService.addAttachmentsToNote(NOTE_ID, List.of(filePart)).block(RESPONSE_TIMEOUT));
+        assertDoesNotThrow(() -> noteService.addAttachmentsToNote(NOTE_ID, List.of(filePart))
+                .collectList()
+                .block(RESPONSE_TIMEOUT));
 
         verify(noteAttachmentsRepository, times(2)).save(any());
     }
@@ -140,7 +142,9 @@ class NoteServiceTest {
         when(attachmentService.saveAttachments(List.of(filePart)))
                 .thenReturn(Flux.fromIterable(List.of(ATTACHMENT_ID1, ATTACHMENT_ID2)));
 
-        assertThatThrownBy(() -> noteService.addAttachmentsToNote(NOTE_ID, List.of(filePart)).block(RESPONSE_TIMEOUT))
+        assertThatThrownBy(() -> noteService.addAttachmentsToNote(NOTE_ID, List.of(filePart))
+                .collectList()
+                .block(RESPONSE_TIMEOUT))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Не удалось найти заметку с ИД 1");
 
@@ -151,15 +155,13 @@ class NoteServiceTest {
     void deleteAttachmentsSuccessTest() {
         final var note = createTestNote();
         when(noteRepository.findById(NOTE_ID)).thenReturn(Mono.just(note));
-        when(attachmentService.deleteAttachments(List.of(ATTACHMENT_ID1, ATTACHMENT_ID2)))
-                .thenReturn(Mono.empty());
         when(noteAttachmentsRepository.deleteByNoteIdAndAttachmentIdIn(anyLong(), anyList()))
                 .thenReturn(Mono.empty());
 
         assertDoesNotThrow(() -> noteService.deleteAttachments(NOTE_ID, List.of(ATTACHMENT_ID1, ATTACHMENT_ID2))
                 .block(RESPONSE_TIMEOUT));
 
-        verify(noteAttachmentsRepository, times(2))
+        verify(noteAttachmentsRepository, times(1))
                 .deleteByNoteIdAndAttachmentIdIn(anyLong(), anyList());
     }
 

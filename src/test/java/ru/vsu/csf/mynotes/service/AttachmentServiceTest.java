@@ -12,6 +12,7 @@ import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.vsu.csf.mynotes.configuration.property.ApplicationProperties;
+import ru.vsu.csf.mynotes.dictionary.FileExtension;
 import ru.vsu.csf.mynotes.exception.BadRequestException;
 import ru.vsu.csf.mynotes.exception.NotFoundException;
 import ru.vsu.csf.mynotes.model.entity.Attachment;
@@ -61,7 +62,10 @@ class AttachmentServiceTest {
         try (MockedStatic<FilePartUtils> utilities = Mockito.mockStatic(FilePartUtils.class)) {
             utilities.when(() -> FilePartUtils.getByteArray(filePart))
                     .thenReturn(Mono.just(dataBufferBytes));
-            when(attachmentRepository.save(new Attachment().setFile(dataBufferBytes))).thenReturn(Mono.empty());
+            when(attachmentRepository.save(new Attachment()
+                    .setFile(dataBufferBytes)
+                    .setExtension(FileExtension.PNG)))
+                    .thenReturn(Mono.empty());
 
             assertDoesNotThrow(() -> attachmentService.saveAttachments(List.of(filePart))
                     .collectList()
